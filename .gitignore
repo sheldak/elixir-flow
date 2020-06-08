@@ -22,4 +22,33 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 elixir_flow-*.tar
 
-.idea
+/tmp
+# project metadata - Each user should do their own Import using CONTRIBUTING.md
+/.idea
+# ignore idea.xml output
+/cache
+# ignore travis.sh output
+/dependencies
+# build output
+/bin
+/intellij-elixir.zip
+/out
+# JFlex generator download
+JFlex.jar
+jflex-*.jar
+idea-flex.skeleton
+# old lexer generated from Elixir.flex
+src/org/elixir_lang/ElixirFlexLexer.java~
+# old lexer generated from BEAM.Assembly.flex
+src/org/elixir_lang/beam/assembly/FlexLexer.java~
+# OS X thumbnail store
+.DS_Store
+
+# Gradle-related
+.gradle
+/build
+jps-builder/build
+jps-builder/out
+jps-shared/build
+jps-shared/out
+libs/

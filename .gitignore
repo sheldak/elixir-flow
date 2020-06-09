@@ -52,3 +52,5 @@ jps-builder/out
 jps-shared/build
 jps-shared/out
 libs/
+
+*.beam

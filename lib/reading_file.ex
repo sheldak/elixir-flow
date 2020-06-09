@@ -1,6 +1,11 @@
 defmodule ReadingFile do
-  @moduledoc false
+  @moduledoc """
+  Making histogram of words in file in 3 different ways.
+  """
 
+  @doc """
+  Makes histogram mostly by Enum functions.
+  """
   def make_histogram_enum() do
     {:ok, file} = File.open("resources/histogram_enum.txt", [:write])
 
@@ -19,6 +24,9 @@ defmodule ReadingFile do
     :ok
   end
 
+  @doc """
+  Makes histogram mostly by Stream functions.
+  """
   def make_histogram_stream() do
     {:ok, file} = File.open("resources/histogram_stream.txt", [:write])
 
@@ -36,6 +44,9 @@ defmodule ReadingFile do
     :ok
   end
 
+  @doc """
+  Makes histogram mostly by Flow functions.
+  """
   def make_histogram_flow() do
     {:ok, file} = File.open("resources/histogram_flow.txt", [:write])
 
@@ -56,6 +67,9 @@ defmodule ReadingFile do
     :ok
   end
 
+  @doc """
+  Comparing contents of two passed files and prints information whether they are identical.
+  """
   def compare_files(path_1, path_2) do
     case File.read(path_1) == File.read(path_2) do
       true ->  IO.puts "Contents of files are the same!"

@@ -46,30 +46,15 @@ defmodule PollutionDataFlow do
   end
 
   @doc """
-  Extracts all unique stations from `stream`.
+  Gets unique stations from `measurements` (list of maps).
 
-  Returns list of tuples {x, y} where x and y are coordinates of a station.
+  Returns list of unique locations of stations.
   """
-  def get_stations(stream) do
-    window = Flow.Window.count(10)
-
-    stations_coords = stream
-                      |> Flow.from_enumerable()
-                      |> Flow.partition(window: window, stages: 3)
-                      |> Flow.flat_map(&(String.split(&1, ",")))
-                      |> Flow.map(&Float.parse/1)
-                      |> Flow.filter(&(elem(&1, 1) == ""))
-                      |> Flow.map(fn {x, _} -> x end)
-                      |> Enum.to_list()
-
-    first_coordinate = Enum.take_every(stations_coords, 2)
-    second_coordinate = Enum.drop_every(stations_coords, 2)
-
-    stations = Enum.zip(first_coordinate, second_coordinate)
-               |> Flow.from_enumerable()
+  def identify_stations(measurements) do
+    stations = measurements
+               |> Flow.map(fn measurement -> measurement.location end)
                |> Flow.partition()
                |> Flow.uniq()
-               |> Enum.to_list()
 
     stations
   end
@@ -84,35 +69,47 @@ defmodule PollutionDataFlow do
   end
 
   @doc """
-  Adds given `stations` (stream of tuples representing locations) to the pollution server.
+  Adds given `stations` (list of tuples representing locations) to the pollution server.
   """
   def add_stations(stations) do
     add_station_fn = fn station -> :pollution_gen_server.addStation(generate_station_name(station), station) end
 
-    Enum.each(stations, add_station_fn)
+    Flow.map(stations, add_station_fn) |> Flow.run
+#    Enum.each(stations, add_station_fn)
   end
 
   @doc """
-  Adds given `measurements` (stream of maps) to the pollution server.
+  Adds given `measurements` (list of maps) to the pollution server.
   """
   def add_measurements(measurements) do
     add_measurement_fn = fn measurement -> :pollution_gen_server.
-                                             addValue(measurement.location, measurement.datetime, "PM10", measurement.pollution_level) end
+                          addValue(measurement.location, measurement.datetime, "PM10", measurement.pollution_level) end
 
-    Enum.each(measurements, add_measurement_fn)
+    Flow.map(measurements, add_measurement_fn) |> Flow.run
+  end
+
+  @doc """
+  Gets stream from file and make proper measurements and stations structures to add them to the pollution server.
+
+  Returns tuple containing two flows: first with all stations and second with all measurements.
+  """
+  def get_stations_and_measurements do
+    measurements = import_lines_from_CSV()
+                   |> Flow.from_enumerable()
+                   |> Flow.map(&parse_line/1)
+    stations = identify_stations(measurements)
+
+    {stations, measurements}
   end
 
   @doc """
   Main function which gets stream from the file and saves all measurements to the pollution server.
-  Function prints time needed to load stations and measurements to the pollution server.
+  Function prints time needed to preprocess, load stations and load measurements to the pollution server.
   """
-  def add_measurements_from_file do
-    stream = import_lines_from_CSV()
-    stations = get_stations stream
-    measurements = stream
-                   |> Flow.from_enumerable()
-                   |> Flow.map(&parse_line/1)
-                   |> Enum.to_list()
+  def test do
+    {time, {stations, measurements}} = fn -> get_stations_and_measurements() end
+                                       |> :timer.tc
+    time_in_seconds = Kernel./(time, 1_000_000)
 
     :pollution_sup.start_link()
     add_stations_time = fn -> add_stations(stations) end
@@ -125,7 +122,8 @@ defmodule PollutionDataFlow do
                             |> elem(0)
                             |> Kernel./(1_000_000)
 
-    :timer.sleep(300);
+    :timer.sleep(500);
+    IO.puts "Time of preprocessing: #{time_in_seconds}"
     IO.puts "Time of adding stations: #{add_stations_time}"
     IO.puts "Time of adding measurements: #{add_measurements_time}"
   end

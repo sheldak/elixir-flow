@@ -89,13 +89,26 @@ defmodule PollutionDataEnum do
   end
 
   @doc """
+  Reads contents of the file and make proper measurements and stations structures to add them to the pollution server.
+
+  Returns tuple containing two flows: first with all stations and second with all measurements.
+  """
+  def get_stations_and_measurements do
+    measurements = import_lines_from_CSV()
+                   |> Enum.map(&parse_line/1)
+    stations = identify_stations(measurements)
+
+    {stations, measurements}
+  end
+
+  @doc """
   Main function which gets list of lines from the file and saves all measurements to the pollution server.
   Function prints time needed to load stations and measurements.
   """
-  def add_measurements_from_file do
-    measurements = import_lines_from_CSV()
-            |> Enum.map(&parse_line/1)
-    stations = identify_stations(measurements)
+  def test do
+    {time, {stations, measurements}} = fn -> get_stations_and_measurements() end
+                                       |> :timer.tc
+    time_in_seconds = Kernel./(time, 1_000_000)
 
     :pollution_sup.start_link()
     add_stations_time = fn -> add_stations(stations) end
@@ -108,7 +121,8 @@ defmodule PollutionDataEnum do
                             |> elem(0)
                             |> Kernel./(1_000_000)
 
-    :timer.sleep(200);
+    :timer.sleep(500);
+    IO.puts "Time of preprocessing: #{time_in_seconds}"
     IO.puts "Time of adding stations: #{add_stations_time}"
     IO.puts "Time of adding measurements: #{add_measurements_time}"
   end

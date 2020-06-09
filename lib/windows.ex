@@ -33,7 +33,7 @@ defmodule Windows do
   def get_stations_window do
     stream = File.stream!("lib/pollution/pollution.csv")
 
-    window = Flow.Window.count(2)
+    window = Flow.Window.count(1)
 
     stations_coords = stream
                       |> Flow.from_enumerable()

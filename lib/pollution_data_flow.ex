@@ -75,7 +75,6 @@ defmodule PollutionDataFlow do
     add_station_fn = fn station -> :pollution_gen_server.addStation(generate_station_name(station), station) end
 
     Flow.map(stations, add_station_fn) |> Flow.run
-#    Enum.each(stations, add_station_fn)
   end
 
   @doc """
